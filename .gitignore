@@ -1,12 +1,37 @@
+# Backend
 backend/data/
 backend/target/
 backend/*.iml
 backend/.idea/
+backend/.settings/
+backend/.classpath
+backend/.project
+
+# Frontend
 frontend/.next/
 frontend/node_modules/
 frontend/out/
-*.log
+
+# Environment
 .env
 .env.local
+.env.production
+.env.development
+
+# Logs
+*.log
+
+# Database
 *.mv.db
 *.mv.tb
+*.h2.db
+*.trace.db
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+*.swp
+*.swo
