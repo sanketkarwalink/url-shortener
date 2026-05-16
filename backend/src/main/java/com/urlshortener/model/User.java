@@ -14,8 +14,11 @@ public class User {
   @Column(nullable = false, unique = true, length = 100)
   private String email;
 
-  @Column(nullable = false)
+  @Column(nullable = true)
   private String passwordHash;
+
+  @Column(length = 100)
+  private String name;
 
   @Column(nullable = false, updatable = false)
   private LocalDateTime createdAt;
@@ -33,6 +36,9 @@ public class User {
 
   public String getPasswordHash() { return passwordHash; }
   public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
+
+  public String getName() { return name; }
+  public void setName(String name) { this.name = name; }
 
   public LocalDateTime getCreatedAt() { return createdAt; }
   public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

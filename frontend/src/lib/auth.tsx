@@ -11,6 +11,7 @@ type AuthContext = {
   token: string | null;
   login: (email: string, password: string) => Promise<string | null>;
   signup: (email: string, password: string) => Promise<string | null>;
+  googleLogin: (credential: string) => Promise<string | null>;
   logout: () => void;
   ready: boolean;
 };
@@ -77,6 +78,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const googleLogin = useCallback(async (credential: string): Promise<string | null> => {
+    try {
+      const res = await fetch(`${API}/api/auth/google`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credential }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Google sign-in failed" }));
+        return err.error || "Google sign-in failed";
+      }
+      const data = await res.json();
+      save(data.token, { userId: data.userId, email: data.email });
+      return null;
+    } catch {
+      return "Cannot reach server";
+    }
+  }, []);
+
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
@@ -84,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("user");
   }, []);
 
-  return <Ctx.Provider value={{ user, token, login, signup, logout, ready }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ user, token, login, signup, googleLogin, logout, ready }}>{children}</Ctx.Provider>;
 }
 
 export function useAuth() {

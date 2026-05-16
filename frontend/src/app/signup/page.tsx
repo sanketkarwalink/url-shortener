@@ -4,9 +4,10 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { GoogleLogin } from "@react-oauth/google";
 
 export default function SignupPage() {
-  const { signup, user, ready } = useAuth();
+  const { signup, googleLogin, user, ready } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -39,6 +40,27 @@ export default function SignupPage() {
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold tracking-tight mb-2">Create account</h1>
           <p className="text-sm text-[var(--muted)]">Get started with URL shortener</p>
+        </div>
+
+        <div className="flex justify-center mb-6">
+          <GoogleLogin
+            onSuccess={async (response) => {
+              const err = await googleLogin(response.credential!);
+              if (err) setError(err);
+              else router.push("/");
+            }}
+            onError={() => setError("Google sign-in failed")}
+            theme="outline"
+            size="large"
+            text="signup_with"
+            shape="rectangular"
+          />
+        </div>
+
+        <div className="flex items-center gap-3 mb-6">
+          <div className="flex-1 h-px bg-[var(--border)]" />
+          <span className="text-xs text-[var(--muted-light)]">OR</span>
+          <div className="flex-1 h-px bg-[var(--border)]" />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

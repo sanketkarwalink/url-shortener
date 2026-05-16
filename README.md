@@ -9,7 +9,7 @@ Shorten URLs, track clicks, analyze traffic — all self-hosted.
 
 ## Features
 
-- **Auth** — register/login with JWT. Each user sees only their own URLs
+- **Auth** — register/login with JWT or Google OAuth. Each user sees only their own URLs
 - **Short links** — 6-character alphanumeric codes, auto-https, SSRF-safe
 - **Click analytics** — daily traffic, device/browser breakdown, top referrers
 - **Rate limited** — 20 creates/min, 60 redirects/min per IP
@@ -25,7 +25,7 @@ Shorten URLs, track clicks, analyze traffic — all self-hosted.
 | Frontend | Next.js 15.3.1, React 19, Tailwind CSS v4, Recharts |
 | Database | H2 (dev) / PostgreSQL 16 (prod) |
 | Cache | Caffeine (in-memory, 1-hour TTL) |
-| Auth | JWT (jjwt), BCrypt passwords |
+| Auth | JWT (jjwt), BCrypt passwords, Google OAuth 2.0 |
 
 ## Quick Start
 
@@ -35,13 +35,17 @@ Shorten URLs, track clicks, analyze traffic — all self-hosted.
 ### Backend (H2 dev mode)
 ```bash
 cd backend
-mvn spring-boot:run
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com mvn spring-boot:run
 # http://localhost:8080
 ```
+
+> `GOOGLE_CLIENT_ID` is optional for development — Google sign-in will be disabled without it.
 
 ### Frontend
 ```bash
 cd frontend
+cp .env.example .env.local
+# Edit .env.local with your Google Client ID
 npm install
 npm run dev
 # http://localhost:3000
@@ -96,24 +100,25 @@ Services used:
 | `APP_BASE_URL` | `https://your-app.onrender.com` |
 | `APP_CORS_ORIGINS` | `https://your-frontend.vercel.app` |
 | `APP_JWT_SECRET` | A random string at least 32 characters long |
+| `GOOGLE_CLIENT_ID` | Your Google OAuth client ID |
 
 **Frontend (Vercel):**
 
 | Variable | Value |
 |----------|-------|
 | `NEXT_PUBLIC_API_URL` | `https://your-app.onrender.com` |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Your Google OAuth client ID |
 
 ### 5. Keep Alive (cron-job.org)
 Create a cron job hitting `https://your-app.onrender.com/actuator/health` every 15 min.
 
 ## API
 
-| Method | Path | Description |
-|--------|------|-------------|
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | `POST` | `/api/auth/register` | No | Register account |
 | `POST` | `/api/auth/login` | No | Login, get JWT |
+| `POST` | `/api/auth/google` | No | Sign in with Google (send ID token) |
 | `POST` | `/api/urls` | Optional | Create short URL |
 | `GET` | `/api/urls` | Yes | List own URLs (paginated) |
 | `GET` | `/api/urls/{id}/analytics` | Yes | Click analytics (own URL) |
