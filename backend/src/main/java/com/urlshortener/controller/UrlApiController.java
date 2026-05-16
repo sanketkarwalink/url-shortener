@@ -68,4 +68,20 @@ public class UrlApiController {
     if (!admin) return ResponseEntity.status(403).body(new ErrorResponse("Forbidden"));
     return ResponseEntity.ok(urlService.getTotalStats());
   }
+
+  @GetMapping("/admin/users")
+  public ResponseEntity<?> adminUsers(@RequestAttribute("admin") boolean admin) {
+    if (!admin) return ResponseEntity.status(403).body(new ErrorResponse("Forbidden"));
+    return ResponseEntity.ok(urlService.listUsers());
+  }
+
+  @DeleteMapping("/admin/users/{userId}")
+  public ResponseEntity<?> deleteUser(@PathVariable Long userId,
+                                      @RequestAttribute("userId") Long myUserId,
+                                      @RequestAttribute("admin") boolean admin) {
+    if (!admin) return ResponseEntity.status(403).body(new ErrorResponse("Forbidden"));
+    if (userId.equals(myUserId)) return ResponseEntity.badRequest().body(new ErrorResponse("Cannot delete yourself"));
+    urlService.deleteUser(userId);
+    return ResponseEntity.noContent().build();
+  }
 }

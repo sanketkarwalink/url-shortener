@@ -128,6 +128,8 @@ Create a cron job hitting `https://your-app.onrender.com/actuator/health` every 
 | `POST` | `/api/urls` | Optional | Create short URL |
 | `GET` | `/api/urls` | Yes | List URLs (`?all=true` for admin view) |
 | `GET` | `/api/urls/admin/stats` | Yes (admin) | Global stats (users, URLs, clicks) |
+| `GET` | `/api/urls/admin/users` | Yes (admin) | List all users with URL/click counts |
+| `DELETE` | `/api/urls/admin/users/{id}` | Yes (admin) | Delete user and all their URLs |
 | `GET` | `/api/urls/{id}/analytics` | Yes | Click analytics |
 | `DELETE` | `/api/urls/{id}` | Yes | Delete URL |
 | `GET` | `/{shortCode}` | No | Redirect |

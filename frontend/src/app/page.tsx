@@ -18,6 +18,16 @@ type UrlEntry = {
   clickCount: number;
 };
 
+type UserEntry = {
+  id: number;
+  email: string;
+  name: string;
+  createdAt: string;
+  urlCount: number;
+  totalClicks: number;
+  admin: boolean;
+};
+
 type Analytics = {
   shortCode: string;
   originalUrl: string;
@@ -83,7 +93,10 @@ export default function Home() {
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [deleting, setDeleting] = useState<number | null>(null);
   const [showAll, setShowAll] = useState(false);
+  const [showUsers, setShowUsers] = useState(false);
   const [stats, setStats] = useState<{ totalUsers: number; totalUrls: number; totalClicks: number } | null>(null);
+  const [users, setUsers] = useState<UserEntry[]>([]);
+  const [userDeleting, setUserDeleting] = useState<number | null>(null);
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
@@ -116,12 +129,40 @@ export default function Home() {
     } catch {}
   }, [token]);
 
+  const fetchUsers = useCallback(async () => {
+    try {
+      const res = await fetch(`${API}/api/urls/admin/users`, {
+        headers: { ...authHeaders(token) },
+      });
+      if (res.ok) setUsers(await res.json());
+    } catch {}
+  }, [token]);
+
+  const deleteUser = async (id: number) => {
+    setUserDeleting(id);
+    try {
+      const res = await fetch(`${API}/api/urls/admin/users/${id}`, {
+        method: "DELETE",
+        headers: { ...authHeaders(token) },
+      });
+      if (res.ok) {
+        await fetchUsers();
+        showToast("User deleted", "success");
+      } else {
+        const err = await res.json().catch(() => ({ error: "Failed" }));
+        showToast(err.error || "Failed to delete user", "error");
+      }
+    } catch {}
+    setUserDeleting(null);
+  };
+
   useEffect(() => {
     if (ready && user) {
-      fetchUrls(0, showAll);
+      if (showUsers) fetchUsers();
+      else fetchUrls(0, showAll);
       if (isAdmin) fetchStats();
     }
-  }, [ready, user, fetchUrls, fetchStats, isAdmin, showAll]);
+  }, [ready, user, fetchUrls, fetchStats, fetchUsers, isAdmin, showAll, showUsers]);
 
   const createUrl = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -281,24 +322,32 @@ export default function Home() {
           <div className="animate-fade-in flex items-center justify-between mb-4">
             <div className="flex items-center gap-2 p-1 rounded-xl bg-[var(--surface)] border border-[var(--border)]">
               <button
-                onClick={() => { setShowAll(false); fetchUrls(0, false); }}
+                onClick={() => { setShowUsers(false); setShowAll(false); fetchUrls(0, false); }}
                 className={`px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${
-                  !showAll ? "bg-[var(--fg)] text-[var(--bg)]" : "text-[var(--muted)] hover:text-[var(--fg)]"
+                  !showUsers && !showAll ? "bg-[var(--fg)] text-[var(--bg)]" : "text-[var(--muted)] hover:text-[var(--fg)]"
                 }`}
               >
                 My URLs
               </button>
               <button
-                onClick={() => { setShowAll(true); fetchUrls(0, true); }}
+                onClick={() => { setShowUsers(false); setShowAll(true); fetchUrls(0, true); }}
                 className={`px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${
-                  showAll ? "bg-[var(--fg)] text-[var(--bg)]" : "text-[var(--muted)] hover:text-[var(--fg)]"
+                  showAll && !showUsers ? "bg-[var(--fg)] text-[var(--bg)]" : "text-[var(--muted)] hover:text-[var(--fg)]"
                 }`}
               >
                 All URLs
               </button>
+              <button
+                onClick={() => { setShowUsers(true); setShowAll(false); fetchUsers(); }}
+                className={`px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${
+                  showUsers ? "bg-[var(--fg)] text-[var(--bg)]" : "text-[var(--muted)] hover:text-[var(--fg)]"
+                }`}
+              >
+                Users
+              </button>
             </div>
 
-            {stats && showAll && (
+            {stats && !showUsers && (
               <div className="flex items-center gap-4 text-xs text-[var(--muted)]">
                 <span title="Users">{stats.totalUsers} users</span>
                 <span title="URLs">{stats.totalUrls} links</span>
@@ -322,8 +371,51 @@ export default function Home() {
           </div>
         )}
 
+        {/* Users table */}
+        {showUsers && (
+          <div className="animate-fade-in">
+            {users.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center">
+                  <svg className="w-7 h-7 text-[var(--muted-light)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium mb-2">No users</h3>
+                <p className="text-sm text-[var(--muted)]">No users registered yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {users.map((u) => (
+                  <div key={u.id} className="flex items-center gap-4 px-4 py-3 rounded-xl bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--muted-light)]/40 transition-all">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-sm font-medium truncate">{u.name || u.email}</span>
+                        {u.admin && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--accent-light)]/10 text-[var(--accent-light)] border border-[var(--accent-light)]/20">admin</span>}
+                      </div>
+                      {u.name && <p className="text-xs text-[var(--muted)] truncate">{u.email}</p>}
+                      <p className="text-[11px] text-[var(--muted-light)] mt-1">{u.urlCount} URLs · {u.totalClicks} clicks · joined {timeAgo(u.createdAt)}</p>
+                    </div>
+                    {!u.admin && (
+                      <button
+                        onClick={() => {
+                          if (confirm(`Delete user ${u.email} and all their URLs?`)) deleteUser(u.id);
+                        }}
+                        disabled={userDeleting === u.id}
+                        className="px-3 py-2 rounded-xl text-xs font-medium border border-transparent text-[var(--muted-light)] hover:text-[var(--error)] hover:border-red-200 dark:hover:border-red-900 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all duration-200 disabled:opacity-30 shrink-0"
+                      >
+                        {userDeleting === u.id ? "..." : "Remove"}
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* URL list */}
-        {urls.length === 0 && totalElements === 0 ? (
+        {!showUsers && (urls.length === 0 && totalElements === 0 ? (
           <div className="text-center py-16 animate-fade-in">
             <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center">
               <svg className="w-7 h-7 text-[var(--muted-light)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -387,10 +479,10 @@ export default function Home() {
               </div>
             ))}
           </div>
-        )}
+        ))}
 
         {/* Pagination */}
-        {totalPages > 1 && (
+        {!showUsers && totalPages > 1 && (
           <div className="flex items-center justify-center gap-4 mt-8 animate-fade-in">
             <button
               disabled={page === 0}

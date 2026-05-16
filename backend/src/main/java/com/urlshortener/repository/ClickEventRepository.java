@@ -30,6 +30,8 @@ public interface ClickEventRepository extends JpaRepository<ClickEvent, Long> {
       "GROUP BY e.browser")
   List<Object[]> browserBreakdown(@Param("urlId") Long urlId);
 
+  void deleteByShortUrlId(Long shortUrlId);
+
   @Query("SELECT e.referer, COUNT(e) FROM ClickEvent e " +
       "WHERE e.shortUrl.id = :urlId AND e.referer IS NOT NULL " +
       "GROUP BY e.referer ORDER BY COUNT(e) DESC")

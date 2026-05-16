@@ -34,7 +34,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         (method.equals("GET") && path.equals("/api/urls"))
         || (method.equals("GET") && path.matches("^/api/urls/\\d+/analytics$"))
         || (method.equals("DELETE") && path.matches("^/api/urls/\\d+$"))
-        || (method.equals("GET") && path.equals("/api/urls/admin/stats"));
+        || path.startsWith("/api/urls/admin/");
 
     if (!protectedPath) {
       if (method.equals("POST") && path.equals("/api/urls")) {

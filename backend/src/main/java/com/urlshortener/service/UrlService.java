@@ -173,6 +173,32 @@ public class UrlService {
   public void evictCache(String shortCode) {
   }
 
+  public List<Map<String, Object>> listUsers() {
+    return userRepo.findAll().stream().map(u -> {
+      List<ShortUrl> urls = shortUrlRepo.findByUserId(u.getId());
+      long clicks = urls.stream().mapToLong(su -> clickRepo.countByShortUrlId(su.getId())).sum();
+      return Map.<String, Object>of(
+          "id", u.getId(),
+          "email", u.getEmail(),
+          "name", u.getName() != null ? u.getName() : "",
+          "createdAt", u.getCreatedAt().toString(),
+          "urlCount", (long) urls.size(),
+          "totalClicks", clicks,
+          "admin", u.isAdmin()
+      );
+    }).collect(Collectors.toList());
+  }
+
+  @Transactional
+  public void deleteUser(Long targetUserId) {
+    List<ShortUrl> urls = shortUrlRepo.findByUserId(targetUserId);
+    for (ShortUrl url : urls) {
+      clickRepo.deleteByShortUrlId(url.getId());
+    }
+    shortUrlRepo.deleteByUserId(targetUserId);
+    userRepo.deleteById(targetUserId);
+  }
+
   public void delete(Long id, Long userId, boolean admin) {
     ShortUrl url = shortUrlRepo.findById(id)
         .orElseThrow(() -> new EntityNotFoundException("URL not found: " + id));
