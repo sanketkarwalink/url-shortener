@@ -71,10 +71,6 @@ export default function Home() {
   const { user, token, logout, ready } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    if (ready && !user) router.push("/login");
-  }, [ready, user, router]);
-
   const [urls, setUrls] = useState<UrlEntry[]>([]);
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -114,6 +110,7 @@ export default function Home() {
   const createUrl = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!url.trim()) return;
+    if (!user) { router.push("/signup"); return; }
     setLoading(true);
     try {
       const res = await fetch(`${API}/api/urls`, {
@@ -173,17 +170,31 @@ export default function Home() {
     setTimeout(() => setCopyCode(null), 2000);
   };
 
-  if (!ready || !user) return null;
+  if (!ready) return null;
 
   return (
     <div className="min-h-screen">
       <div className="max-w-4xl mx-auto px-5 py-12 md:py-20">
         {/* Top bar */}
         <div className="flex items-center justify-between mb-8">
-          <span className="text-sm text-[var(--muted)]">{user.email}</span>
-          <button onClick={logout} className="text-sm text-[var(--muted-light)] hover:text-[var(--fg)] transition-colors cursor-pointer">
-            Sign out
-          </button>
+          {user ? (
+            <>
+              <span className="text-sm text-[var(--muted)]">{user.email}</span>
+              <button onClick={logout} className="text-sm text-[var(--muted-light)] hover:text-[var(--fg)] transition-colors cursor-pointer">
+                Sign out
+              </button>
+            </>
+          ) : (
+            <>
+              <span />
+              <div className="flex items-center gap-3">
+                <a href="/login" className="text-sm text-[var(--muted)] hover:text-[var(--fg)] transition-colors">Sign in</a>
+                <a href="/signup" className="text-sm font-medium px-3 py-1.5 rounded-lg border border-[var(--border)] hover:border-[var(--fg)]/30 transition-all">
+                  Sign up
+                </a>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Hero */}
