@@ -5,7 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend,
 } from "recharts";
 
-const API = "http://localhost:8080";
+const API = "https://url-shortener-upt2.onrender.com";
 
 type UrlEntry = {
   id: number;
