@@ -33,7 +33,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     boolean protectedPath =
         (method.equals("GET") && path.equals("/api/urls"))
         || (method.equals("GET") && path.matches("^/api/urls/\\d+/analytics$"))
-        || (method.equals("DELETE") && path.matches("^/api/urls/\\d+$"));
+        || (method.equals("DELETE") && path.matches("^/api/urls/\\d+$"))
+        || (method.equals("GET") && path.equals("/api/urls/admin/stats"));
 
     if (!protectedPath) {
       if (method.equals("POST") && path.equals("/api/urls")) {
@@ -42,6 +43,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
           String token = authHeader.substring(7);
           if (jwtUtil.validateToken(token)) {
             request.setAttribute("userId", jwtUtil.getUserId(token));
+            request.setAttribute("admin", jwtUtil.isAdmin(token));
           }
         }
       }
@@ -62,6 +64,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     }
 
     request.setAttribute("userId", jwtUtil.getUserId(token));
+    request.setAttribute("admin", jwtUtil.isAdmin(token));
     chain.doFilter(request, response);
   }
 

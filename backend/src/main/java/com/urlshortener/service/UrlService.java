@@ -5,6 +5,7 @@ import com.urlshortener.model.ClickEvent;
 import com.urlshortener.model.ShortUrl;
 import com.urlshortener.repository.ClickEventRepository;
 import com.urlshortener.repository.ShortUrlRepository;
+import com.urlshortener.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,13 +39,15 @@ public class UrlService {
 
   private final ShortUrlRepository shortUrlRepo;
   private final ClickEventRepository clickRepo;
+  private final UserRepository userRepo;
 
   @Value("${app.base-url}")
   private String baseUrl;
 
-  public UrlService(ShortUrlRepository shortUrlRepo, ClickEventRepository clickRepo) {
+  public UrlService(ShortUrlRepository shortUrlRepo, ClickEventRepository clickRepo, UserRepository userRepo) {
     this.shortUrlRepo = shortUrlRepo;
     this.clickRepo = clickRepo;
+    this.userRepo = userRepo;
   }
 
   public UrlResponse createShortUrl(CreateUrlRequest request, Long userId) {
@@ -120,10 +123,28 @@ public class UrlService {
         .map(this::toResponse);
   }
 
-  public AnalyticsResponse getAnalytics(Long id, Long userId) {
+  public Page<UrlResponse> listAllUrls(int page, int size) {
+    return shortUrlRepo.findAll(PageRequest.of(page, size, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt")))
+        .map(this::toResponse);
+  }
+
+  public Map<String, Object> getTotalStats() {
+    long totalUrls = shortUrlRepo.count();
+    long totalClicks = 0;
+    for (var url : shortUrlRepo.findAll()) {
+      totalClicks += clickRepo.countByShortUrlId(url.getId());
+    }
+    return Map.of(
+        "totalUsers", userRepo.count(),
+        "totalUrls", totalUrls,
+        "totalClicks", totalClicks
+    );
+  }
+
+  public AnalyticsResponse getAnalytics(Long id, Long userId, boolean admin) {
     ShortUrl url = shortUrlRepo.findById(id)
         .orElseThrow(() -> new EntityNotFoundException("URL not found: " + id));
-    if (!url.getUserId().equals(userId)) {
+    if (!url.getUserId().equals(userId) && !admin) {
       throw new EntityNotFoundException("URL not found: " + id);
     }
 
@@ -152,10 +173,10 @@ public class UrlService {
   public void evictCache(String shortCode) {
   }
 
-  public void delete(Long id, Long userId) {
+  public void delete(Long id, Long userId, boolean admin) {
     ShortUrl url = shortUrlRepo.findById(id)
         .orElseThrow(() -> new EntityNotFoundException("URL not found: " + id));
-    if (!url.getUserId().equals(userId)) {
+    if (!url.getUserId().equals(userId) && !admin) {
       throw new EntityNotFoundException("URL not found: " + id);
     }
     shortUrlRepo.deleteById(id);

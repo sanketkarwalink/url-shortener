@@ -68,7 +68,7 @@ function Toast({ message, type }: { message: string; type: "success" | "error" }
 }
 
 export default function Home() {
-  const { user, token, logout, ready } = useAuth();
+  const { user, token, logout, ready, isAdmin } = useAuth();
   const router = useRouter();
 
   const [urls, setUrls] = useState<UrlEntry[]>([]);
@@ -82,15 +82,19 @@ export default function Home() {
   const [copyCode, setCopyCode] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [deleting, setDeleting] = useState<number | null>(null);
+  const [showAll, setShowAll] = useState(false);
+  const [stats, setStats] = useState<{ totalUsers: number; totalUrls: number; totalClicks: number } | null>(null);
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 2500);
   };
 
-  const fetchUrls = useCallback(async (p: number) => {
+  const fetchUrls = useCallback(async (p: number, all: boolean = false) => {
     try {
-      const res = await fetch(`${API}/api/urls?page=${p}&size=50`, {
+      const params = new URLSearchParams({ page: String(p), size: "50" });
+      if (all) params.set("all", "true");
+      const res = await fetch(`${API}/api/urls?${params}`, {
         headers: { ...authHeaders(token) },
       });
       if (res.ok) {
@@ -103,9 +107,21 @@ export default function Home() {
     } catch {}
   }, [token]);
 
+  const fetchStats = useCallback(async () => {
+    try {
+      const res = await fetch(`${API}/api/urls/admin/stats`, {
+        headers: { ...authHeaders(token) },
+      });
+      if (res.ok) setStats(await res.json());
+    } catch {}
+  }, [token]);
+
   useEffect(() => {
-    if (ready && user) fetchUrls(0);
-  }, [ready, user, fetchUrls]);
+    if (ready && user) {
+      fetchUrls(0, showAll);
+      if (isAdmin) fetchStats();
+    }
+  }, [ready, user, fetchUrls, fetchStats, isAdmin, showAll]);
 
   const createUrl = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,7 +137,7 @@ export default function Home() {
       if (res.ok) {
         const data = await res.json();
         setUrl("");
-        await fetchUrls(0);
+        await fetchUrls(0, showAll);
         showToast("URL shortened! Ready to share.", "success");
         navigator.clipboard.writeText(data.shortUrl).then(() => {
           showToast("Copied to clipboard!", "success");
@@ -157,7 +173,7 @@ export default function Home() {
         headers: { ...authHeaders(token) },
       });
       setAnalytics(null);
-      await fetchUrls(page);
+      await fetchUrls(page, showAll);
       showToast("URL deleted", "success");
     } catch {}
     setDeleting(null);
@@ -259,6 +275,38 @@ export default function Home() {
             </div>
           </div>
         </form>
+
+        {/* Admin toggle */}
+        {isAdmin && (
+          <div className="animate-fade-in flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2 p-1 rounded-xl bg-[var(--surface)] border border-[var(--border)]">
+              <button
+                onClick={() => { setShowAll(false); fetchUrls(0, false); }}
+                className={`px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${
+                  !showAll ? "bg-[var(--fg)] text-[var(--bg)]" : "text-[var(--muted)] hover:text-[var(--fg)]"
+                }`}
+              >
+                My URLs
+              </button>
+              <button
+                onClick={() => { setShowAll(true); fetchUrls(0, true); }}
+                className={`px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${
+                  showAll ? "bg-[var(--fg)] text-[var(--bg)]" : "text-[var(--muted)] hover:text-[var(--fg)]"
+                }`}
+              >
+                All URLs
+              </button>
+            </div>
+
+            {stats && showAll && (
+              <div className="flex items-center gap-4 text-xs text-[var(--muted)]">
+                <span title="Users">{stats.totalUsers} users</span>
+                <span title="URLs">{stats.totalUrls} links</span>
+                <span title="Clicks">{stats.totalClicks} clicks</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Stats bar */}
         {totalElements > 0 && (

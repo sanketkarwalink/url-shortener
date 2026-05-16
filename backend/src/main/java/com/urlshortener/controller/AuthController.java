@@ -52,8 +52,8 @@ public class AuthController {
     user.setEmail(request.email().strip().toLowerCase());
     user.setPasswordHash(passwordEncoder.encode(request.password()));
     userRepo.save(user);
-    String token = jwtUtil.generateToken(user.getId(), user.getEmail());
-    return ResponseEntity.status(HttpStatus.CREATED).body(new AuthResponse(token, user.getId(), user.getEmail()));
+    String token = jwtUtil.generateToken(user.getId(), user.getEmail(), user.isAdmin());
+    return ResponseEntity.status(HttpStatus.CREATED).body(new AuthResponse(token, user.getId(), user.getEmail(), user.isAdmin()));
   }
 
   @PostMapping("/login")
@@ -62,8 +62,8 @@ public class AuthController {
     if (user == null || user.getPasswordHash() == null || !passwordEncoder.matches(request.password(), user.getPasswordHash())) {
       return ResponseEntity.status(401).body(new ErrorResponse("Invalid email or password"));
     }
-    String token = jwtUtil.generateToken(user.getId(), user.getEmail());
-    return ResponseEntity.ok(new AuthResponse(token, user.getId(), user.getEmail()));
+    String token = jwtUtil.generateToken(user.getId(), user.getEmail(), user.isAdmin());
+    return ResponseEntity.ok(new AuthResponse(token, user.getId(), user.getEmail(), user.isAdmin()));
   }
 
   @PostMapping("/google")
@@ -85,8 +85,8 @@ public class AuthController {
         return userRepo.save(newUser);
       });
 
-      String token = jwtUtil.generateToken(user.getId(), user.getEmail());
-      return ResponseEntity.ok(new AuthResponse(token, user.getId(), user.getEmail()));
+      String token = jwtUtil.generateToken(user.getId(), user.getEmail(), user.isAdmin());
+      return ResponseEntity.ok(new AuthResponse(token, user.getId(), user.getEmail(), user.isAdmin()));
     } catch (Exception e) {
       return ResponseEntity.status(401).body(new ErrorResponse("Google authentication failed"));
     }

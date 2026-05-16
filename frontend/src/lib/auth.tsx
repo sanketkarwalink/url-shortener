@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
-type User = { userId: number; email: string };
+type User = { userId: number; email: string; admin: boolean };
 
 type AuthContext = {
   user: User | null;
@@ -14,6 +14,7 @@ type AuthContext = {
   googleLogin: (credential: string) => Promise<string | null>;
   logout: () => void;
   ready: boolean;
+  isAdmin: boolean;
 };
 
 const Ctx = createContext<AuthContext>(null!);
@@ -22,6 +23,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const isAdmin = user?.admin ?? false;
 
   useEffect(() => {
     const t = localStorage.getItem("token");
@@ -52,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return err.error || "Login failed";
       }
       const data = await res.json();
-      save(data.token, { userId: data.userId, email: data.email });
+      save(data.token, { userId: data.userId, email: data.email, admin: data.admin });
       return null;
     } catch {
       return "Cannot reach server";
@@ -71,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return err.error || "Signup failed";
       }
       const data = await res.json();
-      save(data.token, { userId: data.userId, email: data.email });
+      save(data.token, { userId: data.userId, email: data.email, admin: data.admin });
       return null;
     } catch {
       return "Cannot reach server";
@@ -90,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return err.error || "Google sign-in failed";
       }
       const data = await res.json();
-      save(data.token, { userId: data.userId, email: data.email });
+      save(data.token, { userId: data.userId, email: data.email, admin: data.admin });
       return null;
     } catch {
       return "Cannot reach server";
@@ -104,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("user");
   }, []);
 
-  return <Ctx.Provider value={{ user, token, login, signup, googleLogin, logout, ready }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ user, token, login, signup, googleLogin, logout, ready, isAdmin }}>{children}</Ctx.Provider>;
 }
 
 export function useAuth() {

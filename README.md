@@ -13,7 +13,7 @@ Shorten URLs, track clicks, analyze traffic — all self-hosted.
 - **Short links** — 6-character alphanumeric codes, auto-https, SSRF-safe
 - **Click analytics** — daily traffic, device/browser breakdown, top referrers
 - **Rate limited** — 20 creates/min, 60 redirects/min per IP
-- **Cached redirects** — Caffeine with 1-hour TTL for fast 302s
+- **Admin dashboard** — admins can view all URLs, see global stats, and moderate
 - **Dark mode** — automatic, respects system preference
 - **Docker ready** — one-command production deploy with PostgreSQL
 
@@ -102,6 +102,12 @@ Services used:
 | `APP_JWT_SECRET` | A random string at least 32 characters long |
 | `GOOGLE_CLIENT_ID` | Your Google OAuth client ID |
 
+> To make yourself admin, run this SQL in your Neon console:
+> ```sql
+> ALTER TABLE users ADD COLUMN admin BOOLEAN DEFAULT FALSE;
+> UPDATE users SET admin = TRUE WHERE email = 'your@email.com';
+> ```
+
 **Frontend (Vercel):**
 
 | Variable | Value |
@@ -120,9 +126,10 @@ Create a cron job hitting `https://your-app.onrender.com/actuator/health` every 
 | `POST` | `/api/auth/login` | No | Login, get JWT |
 | `POST` | `/api/auth/google` | No | Sign in with Google (send ID token) |
 | `POST` | `/api/urls` | Optional | Create short URL |
-| `GET` | `/api/urls` | Yes | List own URLs (paginated) |
-| `GET` | `/api/urls/{id}/analytics` | Yes | Click analytics (own URL) |
-| `DELETE` | `/api/urls/{id}` | Yes | Delete URL (own) |
+| `GET` | `/api/urls` | Yes | List URLs (`?all=true` for admin view) |
+| `GET` | `/api/urls/admin/stats` | Yes (admin) | Global stats (users, URLs, clicks) |
+| `GET` | `/api/urls/{id}/analytics` | Yes | Click analytics |
+| `DELETE` | `/api/urls/{id}` | Yes | Delete URL |
 | `GET` | `/{shortCode}` | No | Redirect |
 | `GET` | `/actuator/health` | No | Health check |
 

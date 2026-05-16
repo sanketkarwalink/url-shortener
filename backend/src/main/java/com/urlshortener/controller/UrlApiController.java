@@ -9,8 +9,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/urls")
 public class UrlApiController {
@@ -36,17 +34,21 @@ public class UrlApiController {
   public ResponseEntity<Page<UrlResponse>> listAll(
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "50") int size,
-      @RequestAttribute("userId") Long userId
+      @RequestParam(defaultValue = "false") boolean all,
+      @RequestAttribute("userId") Long userId,
+      @RequestAttribute("admin") boolean admin
   ) {
     if (size > 200) size = 200;
+    if (all && admin) return ResponseEntity.ok(urlService.listAllUrls(page, size));
     return ResponseEntity.ok(urlService.listAll(userId, page, size));
   }
 
   @GetMapping("/{id}/analytics")
   public ResponseEntity<?> getAnalytics(@PathVariable Long id,
-                                        @RequestAttribute("userId") Long userId) {
+                                        @RequestAttribute("userId") Long userId,
+                                        @RequestAttribute("admin") boolean admin) {
     try {
-      return ResponseEntity.ok(urlService.getAnalytics(id, userId));
+      return ResponseEntity.ok(urlService.getAnalytics(id, userId, admin));
     } catch (EntityNotFoundException e) {
       return ResponseEntity.notFound().build();
     }
@@ -54,8 +56,16 @@ public class UrlApiController {
 
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> delete(@PathVariable Long id,
-                                     @RequestAttribute("userId") Long userId) {
-    urlService.delete(id, userId);
+                                     @RequestAttribute("userId") Long userId,
+                                     @RequestAttribute("admin") boolean admin) {
+    urlService.delete(id, userId, admin);
     return ResponseEntity.noContent().build();
+  }
+
+  @GetMapping("/admin/stats")
+  public ResponseEntity<?> adminStats(@RequestAttribute("userId") Long userId,
+                                      @RequestAttribute("admin") boolean admin) {
+    if (!admin) return ResponseEntity.status(403).body(new ErrorResponse("Forbidden"));
+    return ResponseEntity.ok(urlService.getTotalStats());
   }
 }

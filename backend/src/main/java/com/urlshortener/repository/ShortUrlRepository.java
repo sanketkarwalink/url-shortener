@@ -12,4 +12,5 @@ public interface ShortUrlRepository extends JpaRepository<ShortUrl, Long> {
   boolean existsByShortCode(String shortCode);
   Page<ShortUrl> findByUserId(Long userId, Pageable pageable);
   boolean existsByIdAndUserId(Long id, Long userId);
+  long count();
 }
