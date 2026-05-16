@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.regex.Pattern;
 
 @Component
 @Order(2)
@@ -16,18 +17,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
   private final JwtUtil jwtUtil;
 
+  private static final Pattern REDIRECT_PATH = Pattern.compile("^/[a-zA-Z0-9]{6}$");
+
   public JwtAuthFilter(JwtUtil jwtUtil) {
     this.jwtUtil = jwtUtil;
-  }
-
-  @Override
-  protected boolean shouldNotFilter(HttpServletRequest request) {
-    String path = request.getRequestURI();
-    String method = request.getMethod();
-    return path.equals("/api/auth/login")
-        || path.equals("/api/auth/register")
-        || path.equals("/actuator/health")
-        || (method.equals("GET") && path.matches("^/[a-zA-Z0-9]{6}$"));
   }
 
   @Override
@@ -37,19 +30,26 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     String path = request.getRequestURI();
     String method = request.getMethod();
 
-    String authHeader = request.getHeader("Authorization");
+    boolean protectedPath =
+        (method.equals("GET") && path.equals("/api/urls"))
+        || (method.equals("GET") && path.matches("^/api/urls/\\d+/analytics$"))
+        || (method.equals("DELETE") && path.matches("^/api/urls/\\d+$"));
 
-    if (method.equals("POST") && path.equals("/api/urls")) {
-      if (authHeader != null && authHeader.startsWith("Bearer ")) {
-        String token = authHeader.substring(7);
-        if (jwtUtil.validateToken(token)) {
-          request.setAttribute("userId", jwtUtil.getUserId(token));
+    if (!protectedPath) {
+      if (method.equals("POST") && path.equals("/api/urls")) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+          String token = authHeader.substring(7);
+          if (jwtUtil.validateToken(token)) {
+            request.setAttribute("userId", jwtUtil.getUserId(token));
+          }
         }
       }
       chain.doFilter(request, response);
       return;
     }
 
+    String authHeader = request.getHeader("Authorization");
     if (authHeader == null || !authHeader.startsWith("Bearer ")) {
       writeUnauthorized(response, "Missing or invalid Authorization header");
       return;
