@@ -22,9 +22,10 @@ public class UrlApiController {
   }
 
   @PostMapping
-  public ResponseEntity<?> create(@Valid @RequestBody CreateUrlRequest request) {
+  public ResponseEntity<?> create(@Valid @RequestBody CreateUrlRequest request,
+                                  @RequestAttribute(name = "userId", required = false) Long userId) {
     try {
-      UrlResponse response = urlService.createShortUrl(request);
+      UrlResponse response = urlService.createShortUrl(request, userId);
       return ResponseEntity.status(HttpStatus.CREATED).body(response);
     } catch (IllegalArgumentException e) {
       return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
@@ -34,24 +35,27 @@ public class UrlApiController {
   @GetMapping
   public ResponseEntity<Page<UrlResponse>> listAll(
       @RequestParam(defaultValue = "0") int page,
-      @RequestParam(defaultValue = "50") int size
+      @RequestParam(defaultValue = "50") int size,
+      @RequestAttribute("userId") Long userId
   ) {
     if (size > 200) size = 200;
-    return ResponseEntity.ok(urlService.listAll(page, size));
+    return ResponseEntity.ok(urlService.listAll(userId, page, size));
   }
 
   @GetMapping("/{id}/analytics")
-  public ResponseEntity<?> getAnalytics(@PathVariable Long id) {
+  public ResponseEntity<?> getAnalytics(@PathVariable Long id,
+                                        @RequestAttribute("userId") Long userId) {
     try {
-      return ResponseEntity.ok(urlService.getAnalytics(id));
+      return ResponseEntity.ok(urlService.getAnalytics(id, userId));
     } catch (EntityNotFoundException e) {
       return ResponseEntity.notFound().build();
     }
   }
 
   @DeleteMapping("/{id}")
-  public ResponseEntity<Void> delete(@PathVariable Long id) {
-    urlService.delete(id);
+  public ResponseEntity<Void> delete(@PathVariable Long id,
+                                     @RequestAttribute("userId") Long userId) {
+    urlService.delete(id, userId);
     return ResponseEntity.noContent().build();
   }
 }

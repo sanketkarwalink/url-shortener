@@ -22,6 +22,9 @@ public class ShortUrl {
   @Column(nullable = false, updatable = false)
   private LocalDateTime createdAt;
 
+  @Column
+  private Long userId;
+
   @OneToMany(mappedBy = "shortUrl", cascade = CascadeType.REMOVE, orphanRemoval = true)
   private List<ClickEvent> clickEvents = new ArrayList<>();
 
@@ -38,6 +41,9 @@ public class ShortUrl {
 
   public String getShortCode() { return shortCode; }
   public void setShortCode(String shortCode) { this.shortCode = shortCode; }
+
+  public Long getUserId() { return userId; }
+  public void setUserId(Long userId) { this.userId = userId; }
 
   public LocalDateTime getCreatedAt() { return createdAt; }
   public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

@@ -47,7 +47,7 @@ public class UrlService {
     this.clickRepo = clickRepo;
   }
 
-  public UrlResponse createShortUrl(CreateUrlRequest request) {
+  public UrlResponse createShortUrl(CreateUrlRequest request, Long userId) {
     String original = request.originalUrl().strip();
     if (original.isBlank()) {
       throw new IllegalArgumentException("URL must not be empty");
@@ -82,6 +82,7 @@ public class UrlService {
     ShortUrl url = new ShortUrl();
     url.setOriginalUrl(original);
     url.setShortCode(code);
+    url.setUserId(userId);
     shortUrlRepo.save(url);
 
     return toResponse(url);
@@ -114,14 +115,17 @@ public class UrlService {
     return url.getOriginalUrl();
   }
 
-  public Page<UrlResponse> listAll(int page, int size) {
-    return shortUrlRepo.findAll(PageRequest.of(page, size))
+  public Page<UrlResponse> listAll(Long userId, int page, int size) {
+    return shortUrlRepo.findByUserId(userId, PageRequest.of(page, size))
         .map(this::toResponse);
   }
 
-  public AnalyticsResponse getAnalytics(Long id) {
+  public AnalyticsResponse getAnalytics(Long id, Long userId) {
     ShortUrl url = shortUrlRepo.findById(id)
         .orElseThrow(() -> new EntityNotFoundException("URL not found: " + id));
+    if (!url.getUserId().equals(userId)) {
+      throw new EntityNotFoundException("URL not found: " + id);
+    }
 
     long totalClicks = clickRepo.countByShortUrlId(id);
     LocalDateTime since = LocalDateTime.now().minusDays(30);
@@ -148,8 +152,10 @@ public class UrlService {
   public void evictCache(String shortCode) {
   }
 
-  public void delete(Long id) {
-    if (!shortUrlRepo.existsById(id)) {
+  public void delete(Long id, Long userId) {
+    ShortUrl url = shortUrlRepo.findById(id)
+        .orElseThrow(() -> new EntityNotFoundException("URL not found: " + id));
+    if (!url.getUserId().equals(userId)) {
       throw new EntityNotFoundException("URL not found: " + id);
     }
     shortUrlRepo.deleteById(id);

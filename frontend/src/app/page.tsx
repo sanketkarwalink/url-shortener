@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth, authHeaders } from "@/lib/auth";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend,
 } from "recharts";
 
-const API = "https://url-shortener-upt2.onrender.com";
+const API = process.env.NEXT_PUBLIC_API_URL || "https://url-shortener-upt2.onrender.com";
 
 type UrlEntry = {
   id: number;
@@ -66,6 +68,13 @@ function Toast({ message, type }: { message: string; type: "success" | "error" }
 }
 
 export default function Home() {
+  const { user, token, logout, ready } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (ready && !user) router.push("/login");
+  }, [ready, user, router]);
+
   const [urls, setUrls] = useState<UrlEntry[]>([]);
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -85,7 +94,9 @@ export default function Home() {
 
   const fetchUrls = useCallback(async (p: number) => {
     try {
-      const res = await fetch(`${API}/api/urls?page=${p}&size=50`);
+      const res = await fetch(`${API}/api/urls?page=${p}&size=50`, {
+        headers: { ...authHeaders(token) },
+      });
       if (res.ok) {
         const data: PageResponse = await res.json();
         setUrls(data.content);
@@ -94,9 +105,11 @@ export default function Home() {
         setTotalElements(data.totalElements);
       }
     } catch {}
-  }, []);
+  }, [token]);
 
-  useEffect(() => { fetchUrls(0); }, [fetchUrls]);
+  useEffect(() => {
+    if (ready && user) fetchUrls(0);
+  }, [ready, user, fetchUrls]);
 
   const createUrl = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,7 +118,7 @@ export default function Home() {
     try {
       const res = await fetch(`${API}/api/urls`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders(token) },
         body: JSON.stringify({ originalUrl: url.trim() }),
       });
       if (res.ok) {
@@ -131,7 +144,9 @@ export default function Home() {
     setAnalyticsLoading(true);
     setAnalytics(null);
     try {
-      const res = await fetch(`${API}/api/urls/${entry.id}/analytics`);
+      const res = await fetch(`${API}/api/urls/${entry.id}/analytics`, {
+        headers: { ...authHeaders(token) },
+      });
       if (res.ok) setAnalytics(await res.json());
     } catch {}
     setAnalyticsLoading(false);
@@ -140,7 +155,10 @@ export default function Home() {
   const deleteUrl = async (id: number) => {
     setDeleting(id);
     try {
-      await fetch(`${API}/api/urls/${id}`, { method: "DELETE" });
+      await fetch(`${API}/api/urls/${id}`, {
+        method: "DELETE",
+        headers: { ...authHeaders(token) },
+      });
       setAnalytics(null);
       await fetchUrls(page);
       showToast("URL deleted", "success");
@@ -155,9 +173,19 @@ export default function Home() {
     setTimeout(() => setCopyCode(null), 2000);
   };
 
+  if (!ready || !user) return null;
+
   return (
     <div className="min-h-screen">
       <div className="max-w-4xl mx-auto px-5 py-12 md:py-20">
+        {/* Top bar */}
+        <div className="flex items-center justify-between mb-8">
+          <span className="text-sm text-[var(--muted)]">{user.email}</span>
+          <button onClick={logout} className="text-sm text-[var(--muted-light)] hover:text-[var(--fg)] transition-colors cursor-pointer">
+            Sign out
+          </button>
+        </div>
+
         {/* Hero */}
         <div className="text-center mb-12 animate-fade-in">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--surface)] border border-[var(--border)] text-xs text-[var(--muted)] mb-6">

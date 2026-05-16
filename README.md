@@ -9,6 +9,7 @@ Shorten URLs, track clicks, analyze traffic — all self-hosted.
 
 ## Features
 
+- **Auth** — register/login with JWT. Each user sees only their own URLs
 - **Short links** — 6-character alphanumeric codes, auto-https, SSRF-safe
 - **Click analytics** — daily traffic, device/browser breakdown, top referrers
 - **Rate limited** — 20 creates/min, 60 redirects/min per IP
@@ -20,10 +21,11 @@ Shorten URLs, track clicks, analyze traffic — all self-hosted.
 
 | Layer | Tech |
 |-------|------|
-| Backend | Spring Boot 3.4.4, Java 21, Maven |
+| Backend | Spring Boot 3.4.4, Java 21, Maven, Spring Security |
 | Frontend | Next.js 15.3.1, React 19, Tailwind CSS v4, Recharts |
 | Database | H2 (dev) / PostgreSQL 16 (prod) |
 | Cache | Caffeine (in-memory, 1-hour TTL) |
+| Auth | JWT (jjwt), BCrypt passwords |
 
 ## Quick Start
 
@@ -81,19 +83,43 @@ Services used:
 3. Deploy
 4. Update `API` constant in `frontend/src/app/page.tsx` to your Render URL
 
-### 4. Keep Alive (cron-job.org)
+### 4. Environment Variables
+
+**Backend (Render):**
+
+| Variable | Value |
+|----------|-------|
+| `SPRING_PROFILES_ACTIVE` | `postgres` |
+| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://...?sslmode=require` |
+| `SPRING_DATASOURCE_USERNAME` | Neon username |
+| `SPRING_DATASOURCE_PASSWORD` | Neon password |
+| `APP_BASE_URL` | `https://your-app.onrender.com` |
+| `APP_CORS_ORIGINS` | `https://your-frontend.vercel.app` |
+| `APP_JWT_SECRET` | A random string at least 32 characters long |
+
+**Frontend (Vercel):**
+
+| Variable | Value |
+|----------|-------|
+| `NEXT_PUBLIC_API_URL` | `https://your-app.onrender.com` |
+
+### 5. Keep Alive (cron-job.org)
 Create a cron job hitting `https://your-app.onrender.com/actuator/health` every 15 min.
 
 ## API
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `POST` | `/api/urls` | Create short URL |
-| `GET` | `/api/urls` | List all URLs (paginated) |
-| `GET` | `/api/urls/{id}/analytics` | Click analytics |
-| `DELETE` | `/api/urls/{id}` | Delete URL |
-| `GET` | `/{shortCode}` | Redirect |
-| `GET` | `/actuator/health` | Health check |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `POST` | `/api/auth/register` | No | Register account |
+| `POST` | `/api/auth/login` | No | Login, get JWT |
+| `POST` | `/api/urls` | Optional | Create short URL |
+| `GET` | `/api/urls` | Yes | List own URLs (paginated) |
+| `GET` | `/api/urls/{id}/analytics` | Yes | Click analytics (own URL) |
+| `DELETE` | `/api/urls/{id}` | Yes | Delete URL (own) |
+| `GET` | `/{shortCode}` | No | Redirect |
+| `GET` | `/actuator/health` | No | Health check |
 
 ```bash
 curl -X POST https://your-app.onrender.com/api/urls \
