@@ -1,5 +1,6 @@
 package com.urlshortener.controller;
 
+import com.urlshortener.model.ShortUrl;
 import com.urlshortener.service.UrlService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,10 +32,13 @@ public class RedirectController {
       return ResponseEntity.notFound().build();
     }
     try {
-      String originalUrl = urlService.resolveCached(shortCode);
+      ShortUrl url = urlService.resolveCached(shortCode);
+      if (url.isExpired()) {
+        return ResponseEntity.status(HttpStatus.GONE).build();
+      }
       urlService.resolveAndTrack(shortCode, request);
       HttpHeaders headers = new HttpHeaders();
-      headers.setLocation(URI.create(originalUrl));
+      headers.setLocation(URI.create(url.getOriginalUrl()));
       return new ResponseEntity<>(headers, HttpStatus.FOUND);
     } catch (EntityNotFoundException e) {
       return ResponseEntity.notFound().build();

@@ -86,6 +86,9 @@ public class UrlService {
     url.setOriginalUrl(original);
     url.setShortCode(code);
     url.setUserId(userId);
+    if (request.expiresIn() != null && request.expiresIn() > 0) {
+      url.setExpiresAt(LocalDateTime.now().plusHours(request.expiresIn()));
+    }
     shortUrlRepo.save(url);
 
     return toResponse(url);
@@ -112,10 +115,9 @@ public class UrlService {
   }
 
   @Cacheable(value = "shortUrl", key = "#shortCode")
-  public String resolveCached(String shortCode) {
-    ShortUrl url = shortUrlRepo.findByShortCode(shortCode)
+  public ShortUrl resolveCached(String shortCode) {
+    return shortUrlRepo.findByShortCode(shortCode)
         .orElseThrow(() -> new EntityNotFoundException("Short URL not found: " + shortCode));
-    return url.getOriginalUrl();
   }
 
   public Page<UrlResponse> listAll(Long userId, int page, int size) {
@@ -268,7 +270,9 @@ public class UrlService {
         url.getShortCode(),
         baseUrl + "/" + url.getShortCode(),
         url.getCreatedAt(),
-        clickRepo.countByShortUrlId(url.getId())
+        clickRepo.countByShortUrlId(url.getId()),
+        url.getExpiresAt(),
+        url.isExpired()
     );
   }
 

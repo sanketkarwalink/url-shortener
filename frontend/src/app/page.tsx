@@ -16,6 +16,8 @@ type UrlEntry = {
   shortUrl: string;
   createdAt: string;
   clickCount: number;
+  expiresAt: string | null;
+  expired: boolean;
 };
 
 type UserEntry = {
@@ -86,6 +88,7 @@ export default function Home() {
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const [url, setUrl] = useState("");
+  const [expiresIn, setExpiresIn] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
@@ -170,10 +173,12 @@ export default function Home() {
     if (!user) { router.push("/signup"); return; }
     setLoading(true);
     try {
+      const body: Record<string, unknown> = { originalUrl: url.trim() };
+      if (expiresIn) body.expiresIn = expiresIn;
       const res = await fetch(`${API}/api/urls`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders(token) },
-        body: JSON.stringify({ originalUrl: url.trim() }),
+        body: JSON.stringify(body),
       });
       if (res.ok) {
         const data = await res.json();
@@ -315,6 +320,22 @@ export default function Home() {
               </button>
             </div>
           </div>
+          {user && (
+            <div className="flex justify-center mt-3">
+              <select
+                value={expiresIn ?? ""}
+                onChange={(e) => setExpiresIn(e.target.value ? Number(e.target.value) : null)}
+                className="px-4 py-2 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-xs text-[var(--muted)] outline-none focus:border-[var(--accent-light)] transition-colors appearance-none cursor-pointer"
+              >
+                <option value="">Never expires</option>
+                <option value={1}>Expires in 1 hour</option>
+                <option value={6}>Expires in 6 hours</option>
+                <option value={24}>Expires in 1 day</option>
+                <option value={168}>Expires in 7 days</option>
+                <option value={720}>Expires in 30 days</option>
+              </select>
+            </div>
+          )}
         </form>
 
         {/* Admin toggle */}
@@ -445,6 +466,16 @@ export default function Home() {
                       <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--surface)] border border-[var(--border)]">
                         {entry.clickCount} click{entry.clickCount !== 1 ? "s" : ""}
                       </span>
+                      {entry.expiresAt && !entry.expired && (
+                        <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400">
+                          {timeAgo(entry.expiresAt)} left
+                        </span>
+                      )}
+                      {entry.expired && (
+                        <span className="text-[11px] px-2 py-0.5 rounded-full bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-red-500 dark:text-red-400">
+                          Expired
+                        </span>
+                      )}
                     </div>
                     <p className="text-sm text-[var(--muted)] truncate max-w-lg">
                       {entry.originalUrl}

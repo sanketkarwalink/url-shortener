@@ -11,6 +11,7 @@ Shorten URLs, track clicks, analyze traffic — all self-hosted.
 
 - **Auth** — register/login with JWT or Google OAuth. Each user sees only their own URLs
 - **Short links** — 6-character alphanumeric codes, auto-https, SSRF-safe
+- **Link expiration** — optional auto-expiry (1h, 6h, 1d, 7d, 30d); expired links return 410 Gone
 - **Click analytics** — daily traffic, device/browser breakdown, top referrers
 - **Rate limited** — 20 creates/min, 60 redirects/min per IP
 - **Admin dashboard** — admins can view all URLs, see global stats, and moderate
@@ -104,7 +105,6 @@ Services used:
 
 > To make yourself admin, run this SQL in your Neon console:
 > ```sql
-> ALTER TABLE users ADD COLUMN admin BOOLEAN DEFAULT FALSE;
 > UPDATE users SET admin = TRUE WHERE email = 'your@email.com';
 > ```
 
@@ -125,7 +125,7 @@ Create a cron job hitting `https://your-app.onrender.com/actuator/health` every 
 | `POST` | `/api/auth/register` | No | Register account |
 | `POST` | `/api/auth/login` | No | Login, get JWT |
 | `POST` | `/api/auth/google` | No | Sign in with Google (send ID token) |
-| `POST` | `/api/urls` | Optional | Create short URL |
+| `POST` | `/api/urls` | Optional | Create short URL. Optional body: `{"originalUrl":"...", "expiresIn": 24}` (hours) |
 | `GET` | `/api/urls` | Yes | List URLs (`?all=true` for admin view) |
 | `GET` | `/api/urls/admin/stats` | Yes (admin) | Global stats (users, URLs, clicks) |
 | `GET` | `/api/urls/admin/users` | Yes (admin) | List all users with URL/click counts |
@@ -138,7 +138,7 @@ Create a cron job hitting `https://your-app.onrender.com/actuator/health` every 
 ```bash
 curl -X POST https://your-app.onrender.com/api/urls \
   -H "Content-Type: application/json" \
-  -d '{"originalUrl":"https://example.com"}'
+  -d '{"originalUrl":"https://example.com", "expiresIn": 24}'
 ```
 
 ## Docker
