@@ -294,19 +294,19 @@ export default function Home() {
         <form onSubmit={createUrl} className="animate-slide-up mb-12">
           <div className="relative group">
             <div className="absolute -inset-0.5 bg-gradient-to-r from-[var(--accent-light)] to-[var(--accent-light)] opacity-20 group-hover:opacity-30 blur-xl rounded-2xl transition-all duration-500" />
-            <div className="relative flex gap-2 p-1.5 rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-sm">
+            <div className="relative flex flex-col sm:flex-row gap-2 p-1.5 rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-sm">
               <input
                 type="url"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="Paste your long URL here..."
                 required
-                className="flex-1 px-5 py-3.5 rounded-xl bg-transparent text-sm outline-none placeholder:text-[var(--muted-light)] focus:outline-none"
+                className="w-full sm:flex-1 px-5 py-3.5 rounded-xl bg-transparent text-sm outline-none placeholder:text-[var(--muted-light)] focus:outline-none"
               />
               <button
                 type="submit"
                 disabled={loading}
-                className="px-6 py-3.5 rounded-xl text-sm font-medium transition-all duration-200 disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+                className="w-full sm:w-auto px-6 py-3.5 rounded-xl text-sm font-medium transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
                 style={{
                   background: "linear-gradient(135deg, var(--fg), var(--accent-light))",
                   color: "var(--bg)",
@@ -467,32 +467,32 @@ export default function Home() {
                 className="animate-slide-up group relative bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-4 md:p-5 hover:border-[var(--muted-light)]/40 transition-all duration-300"
                 style={{ animationDelay: `${i * 50}ms`, animationFillMode: "both" }}
               >
-                <div className="flex items-start gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-1.5">
+                <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+                  <div className="flex-1 min-w-0 w-full sm:w-auto">
+                    <div className="flex items-center gap-3 mb-1.5 flex-wrap">
                       <span className="font-mono text-sm font-semibold bg-gradient-to-r from-[var(--accent-light)] to-[var(--fg)] bg-clip-text text-transparent">
                         {entry.shortCode}
                       </span>
                       <span className="text-xs text-[var(--muted-light)]">{timeAgo(entry.createdAt)}</span>
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--surface)] border border-[var(--border)]">
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--surface)] border border-[var(--border)] shrink-0">
                         {entry.clickCount} click{entry.clickCount !== 1 ? "s" : ""}
                       </span>
                       {entry.expiresAt && !entry.expired && (
-                        <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400">
+                        <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 shrink-0">
                           {timeAgo(entry.expiresAt)} left
                         </span>
                       )}
                       {entry.expired && (
-                        <span className="text-[11px] px-2 py-0.5 rounded-full bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-red-500 dark:text-red-400">
+                        <span className="text-[11px] px-2 py-0.5 rounded-full bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-red-500 dark:text-red-400 shrink-0">
                           Expired
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-[var(--muted)] truncate max-w-lg">
+                    <p className="text-sm text-[var(--muted)] truncate max-w-full">
                       {entry.originalUrl}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 w-full sm:w-auto justify-end sm:justify-start">
                     <button
                       onClick={() => copyToClipboard(entry.shortUrl, entry.shortCode)}
                       className={`px-3.5 py-2 rounded-xl text-xs font-medium border transition-all duration-200 ${
