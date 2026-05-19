@@ -201,12 +201,14 @@ public class UrlService {
     userRepo.deleteById(targetUserId);
   }
 
+  @Transactional
   public void delete(Long id, Long userId, boolean admin) {
     ShortUrl url = shortUrlRepo.findById(id)
         .orElseThrow(() -> new EntityNotFoundException("URL not found: " + id));
     if (!url.getUserId().equals(userId) && !admin) {
       throw new EntityNotFoundException("URL not found: " + id);
     }
+    clickRepo.deleteByShortUrlId(id);
     shortUrlRepo.deleteById(id);
   }
 

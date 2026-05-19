@@ -214,14 +214,22 @@ export default function Home() {
   const deleteUrl = async (id: number) => {
     setDeleting(id);
     try {
-      await fetch(`${API}/api/urls/${id}`, {
+      const res = await fetch(`${API}/api/urls/${id}`, {
         method: "DELETE",
         headers: { ...authHeaders(token) },
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Failed to delete" }));
+        showToast(err.error || "Failed to delete", "error");
+        setDeleting(null);
+        return;
+      }
       setAnalytics(null);
       await fetchUrls(page, showAll);
       showToast("URL deleted", "success");
-    } catch {}
+    } catch {
+      showToast("Cannot reach server", "error");
+    }
     setDeleting(null);
   };
 
