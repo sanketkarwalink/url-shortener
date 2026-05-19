@@ -119,6 +119,9 @@ export default function Home() {
         setPage(data.number);
         setTotalPages(data.totalPages);
         setTotalElements(data.totalElements);
+      } else {
+        const err = await res.json().catch(() => ({ error: "Failed to load URLs" }));
+        showToast(err.error || "Failed to load URLs", "error");
       }
     } catch {
       showToast("Cannot reach server", "error");
@@ -168,6 +171,17 @@ export default function Home() {
       if (isAdmin) fetchStats();
     }
   }, [ready, user, fetchUrls, fetchStats, fetchUsers, isAdmin, showAll, showUsers]);
+
+  useEffect(() => {
+    if (!ready) return;
+    const onFocus = () => {
+      if (!user) return;
+      if (showUsers) fetchUsers();
+      else fetchUrls(page, showAll);
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [ready, user, fetchUrls, fetchUsers, page, showAll, showUsers]);
 
   const createUrl = async (e: React.FormEvent) => {
     e.preventDefault();
