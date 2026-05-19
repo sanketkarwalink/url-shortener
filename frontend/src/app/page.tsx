@@ -120,7 +120,9 @@ export default function Home() {
         setTotalPages(data.totalPages);
         setTotalElements(data.totalElements);
       }
-    } catch {}
+    } catch {
+      showToast("Cannot reach server", "error");
+    }
   }, [token]);
 
   const fetchStats = useCallback(async () => {
@@ -478,9 +480,14 @@ export default function Home() {
                 <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
                   <div className="flex-1 min-w-0 w-full sm:w-auto">
                     <div className="flex items-center gap-3 mb-1.5 flex-wrap">
-                      <span className="font-mono text-sm font-semibold bg-gradient-to-r from-[var(--accent-light)] to-[var(--fg)] bg-clip-text text-transparent">
+                      <a
+                        href={entry.shortUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-sm font-semibold bg-gradient-to-r from-[var(--accent-light)] to-[var(--fg)] bg-clip-text text-transparent hover:opacity-80 transition-opacity"
+                      >
                         {entry.shortCode}
-                      </span>
+                      </a>
                       <span className="text-xs text-[var(--muted-light)]">{timeAgo(entry.createdAt)}</span>
                       <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--surface)] border border-[var(--border)] shrink-0">
                         {entry.clickCount} click{entry.clickCount !== 1 ? "s" : ""}
