@@ -38,26 +38,30 @@ export default function LoginPage() {
           <p className="text-sm text-[var(--muted)]">Sign in to your account</p>
         </div>
 
-        <div className="flex justify-center mb-6">
-          <GoogleLogin
-            onSuccess={async (response) => {
-              const err = await googleLogin(response.credential!);
-              if (err) setError(err);
-              else router.push("/");
-            }}
-            onError={() => setError("Google sign-in failed")}
-            theme="outline"
-            size="large"
-            text="signin_with"
-            shape="rectangular"
-          />
-        </div>
+        {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
+          <>
+            <div className="flex justify-center mb-6">
+              <GoogleLogin
+                onSuccess={async (response) => {
+                  const err = await googleLogin(response.credential!);
+                  if (err) setError(err);
+                  else router.push("/");
+                }}
+                onError={() => setError("Google sign-in failed")}
+                theme="outline"
+                size="large"
+                text="signin_with"
+                shape="rectangular"
+              />
+            </div>
 
-        <div className="flex items-center gap-3 mb-6">
-          <div className="flex-1 h-px bg-[var(--border)]" />
-          <span className="text-xs text-[var(--muted-light)]">OR</span>
-          <div className="flex-1 h-px bg-[var(--border)]" />
-        </div>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex-1 h-px bg-[var(--border)]" />
+              <span className="text-xs text-[var(--muted-light)]">OR</span>
+              <div className="flex-1 h-px bg-[var(--border)]" />
+            </div>
+          </>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

@@ -48,9 +48,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             `,
           }}
         />
-        <GoogleOAuthProvider clientId={googleClientId}>
+        {googleClientId ? (
+          <GoogleOAuthProvider clientId={googleClientId}>
+            <AuthProvider>{children}</AuthProvider>
+          </GoogleOAuthProvider>
+        ) : (
           <AuthProvider>{children}</AuthProvider>
-        </GoogleOAuthProvider>
+        )}
       </body>
     </html>
   );

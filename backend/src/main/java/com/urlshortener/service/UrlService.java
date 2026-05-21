@@ -13,6 +13,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -121,7 +122,7 @@ public class UrlService {
   }
 
   public Page<UrlResponse> listAll(Long userId, int page, int size) {
-    return shortUrlRepo.findByUserId(userId, PageRequest.of(page, size))
+    return shortUrlRepo.findByUserId(userId, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")))
         .map(this::toResponse);
   }
 
@@ -205,11 +206,14 @@ public class UrlService {
   public void delete(Long id, Long userId, boolean admin) {
     ShortUrl url = shortUrlRepo.findById(id)
         .orElseThrow(() -> new EntityNotFoundException("URL not found: " + id));
-    if (!url.getUserId().equals(userId) && !admin) {
-      throw new EntityNotFoundException("URL not found: " + id);
+    if (url.getUserId() == null || !url.getUserId().equals(userId)) {
+      if (!admin) {
+        throw new EntityNotFoundException("URL not found: " + id);
+      }
     }
     clickRepo.deleteByShortUrlId(id);
     shortUrlRepo.deleteById(id);
+    evictCache(url.getShortCode());
   }
 
   private String generateUniqueCode() {

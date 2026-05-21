@@ -62,6 +62,16 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+function timeLeft(dateStr: string): string {
+  const ms = new Date(dateStr).getTime() - Date.now();
+  if (ms <= 0) return "expired";
+  const mins = Math.ceil(ms / 60000);
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.ceil(mins / 60);
+  if (hrs < 24) return `${hrs}h`;
+  return `${Math.ceil(hrs / 24)}d`;
+}
+
 function Toast({ message, type }: { message: string; type: "success" | "error" }) {
   return (
     <div className="fixed bottom-6 right-6 z-50 animate-slide-up">
@@ -205,8 +215,8 @@ export default function Home() {
           showToast("Copied to clipboard!", "success");
         }).catch(() => {});
       } else {
-        const err = await res.json().catch(() => ({ error: "Invalid URL" }));
-        showToast(err.error || "Failed to create short URL", "error");
+        const err = await res.json().catch(() => null);
+        showToast(err?.error || "Failed to create short URL", "error");
       }
     } catch {
       showToast("Cannot reach server. Is the backend running on port 8080?", "error");
@@ -508,7 +518,7 @@ export default function Home() {
                       </span>
                       {entry.expiresAt && !entry.expired && (
                         <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 shrink-0">
-                          {timeAgo(entry.expiresAt)} left
+                          {timeLeft(entry.expiresAt)} left
                         </span>
                       )}
                       {entry.expired && (
