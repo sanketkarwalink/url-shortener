@@ -102,12 +102,44 @@ docker compose up --build
 ## Env Vars (for Render/Neon)
 Key env vars used by the backend:
 - `SPRING_PROFILES_ACTIVE` -> `postgres`
-- `SPRING_DATASOURCE_URL` -> Neon JDBC URL
+- `SPRING_DATASOURCE_URL` -> Neon JDBC URL (e.g. `jdbc:postgresql://<host>/neondb?sslmode=require`)
 - `SPRING_DATASOURCE_USERNAME` / `SPRING_DATASOURCE_PASSWORD`
-- `APP_BASE_URL` -> backend public URL
-- `APP_CORS_ORIGINS` -> frontend URL
+- `APP_BASE_URL` -> frontend URL (e.g. `https://url-shortener-seven-ashy.vercel.app`)
+- `app.cors-origins` -> frontend URL (**must use hyphens**, not `APP_CORS_ORIGINS` — Spring Boot `@Value` maps env vars with dots, not hyphens)
 - `APP_JWT_SECRET` -> JWT signing secret (min 32 chars)
+- `GOOGLE_CLIENT_ID` -> Google OAuth client ID (used by `application.properties` via `${GOOGLE_CLIENT_ID:}`)
 - `NEXT_PUBLIC_API_URL` -> frontend env var for backend API URL
+
+## Test Accounts (local PostgreSQL)
+| Email | Password |
+|---|---|
+| `test@example.com` | `password123` |
+| `sanketkarwa.inbox@gmail.com` | `Test@123` |
+
+## Local Dev Setup
+```bash
+# Start PostgreSQL
+brew services start postgresql@16
+
+# Start backend (PostgreSQL profile)
+cd backend && APP_JWT_SECRET="url-shortener-dev-secret-key-change-in-production-min-32-chars!!" mvn spring-boot:run -Dspring-boot.run.profiles=postgres
+
+# Start frontend
+cd frontend && npm run dev
+```
+- Frontend: http://localhost:3000 (uses `.env.local` for API URL)
+- Backend: http://localhost:8080
+- PostgreSQL: localhost:5432, database `urlshortener`, user `urlshortener`/`urlshortener`
+
+## Fixes Applied (this session)
+1. **Sort order** — `listAll()` in UrlService.java: added `Sort.by(DESC, "createdAt")` so new URLs appear on page 0
+2. **Cache eviction** — `delete()` now calls `evictCache(shortCode)` so deleted URLs stop redirecting immediately
+3. **NPE fix** — `delete()` null-guards `url.getUserId()` for anonymous URLs
+4. **Service worker** — `sw.js` now skips API paths (`/api/*`) and clears all caches on activate
+5. **Google OAuth guard** — `layout.tsx` only wraps `GoogleOAuthProvider` if `NEXT_PUBLIC_GOOGLE_CLIENT_ID` is set; login/signup pages hide Google button when missing
+6. **Expiry timer** — added `timeLeft()` function for future dates so expiry badge shows "1h left" instead of "just now"
+7. **Error message fix** — `createUrl` shows "Failed to create short URL" instead of misleading "Invalid URL"
+8. **Click dedup** — `resolveAndTrack()` in UrlService.java: added Caffeine-based dedup cache (2s window, same IP + shortCode) to prevent duplicate ClickEvents from browser prefetch/race conditions
 
 ## Notes
 - Rate limit filter uses a circular buffer sliding window (in-memory, per-IP)

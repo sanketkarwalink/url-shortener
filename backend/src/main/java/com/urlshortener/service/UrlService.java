@@ -1,5 +1,7 @@
 package com.urlshortener.service;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.urlshortener.dto.*;
 import com.urlshortener.model.ClickEvent;
 import com.urlshortener.model.ShortUrl;
@@ -23,6 +25,7 @@ import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -44,6 +47,9 @@ public class UrlService {
 
   @Value("${app.base-url}")
   private String baseUrl;
+
+  private final Cache<String, Boolean> clickDedup =
+      Caffeine.newBuilder().expireAfterWrite(2, TimeUnit.SECONDS).maximumSize(100_000).build();
 
   public UrlService(ShortUrlRepository shortUrlRepo, ClickEventRepository clickRepo, UserRepository userRepo) {
     this.shortUrlRepo = shortUrlRepo;
@@ -100,9 +106,16 @@ public class UrlService {
     ShortUrl url = shortUrlRepo.findByShortCode(shortCode)
         .orElseThrow(() -> new EntityNotFoundException("Short URL not found: " + shortCode));
 
+    String ip = request.getRemoteAddr();
+    String dedupKey = shortCode + ":" + ip;
+    if (clickDedup.getIfPresent(dedupKey) != null) {
+      return url.getOriginalUrl();
+    }
+    clickDedup.put(dedupKey, Boolean.TRUE);
+
     ClickEvent event = new ClickEvent();
     event.setShortUrl(url);
-    event.setIpAddress(request.getRemoteAddr());
+    event.setIpAddress(ip);
     event.setUserAgent(request.getHeader("User-Agent"));
     event.setReferer(request.getHeader("Referer"));
 
