@@ -11,6 +11,7 @@ backend/.project
 frontend/.next/
 frontend/node_modules/
 frontend/out/
+*.tsbuildinfo
 
 # Environment
 .env
@@ -35,3 +36,6 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+
+# AI tooling config
+.opencode/
