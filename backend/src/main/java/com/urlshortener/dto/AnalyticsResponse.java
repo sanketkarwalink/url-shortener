@@ -7,7 +7,9 @@ public record AnalyticsResponse(
     String originalUrl,
     long totalClicks,
     List<DailyCount> dailyClicks,
+    List<DailyDeviceCount> dailyDeviceBreakdown,
     List<CountItem> devices,
     List<CountItem> browsers,
+    List<CountItem> os,
     List<CountItem> referrers
 ) {}

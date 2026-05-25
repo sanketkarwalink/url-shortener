@@ -36,4 +36,14 @@ public interface ClickEventRepository extends JpaRepository<ClickEvent, Long> {
       "WHERE e.shortUrl.id = :urlId AND e.referer IS NOT NULL " +
       "GROUP BY e.referer ORDER BY COUNT(e) DESC")
   List<Object[]> refererBreakdown(@Param("urlId") Long urlId);
+
+  @Query("SELECT e.os, COUNT(e) FROM ClickEvent e " +
+      "WHERE e.shortUrl.id = :urlId AND e.os IS NOT NULL " +
+      "GROUP BY e.os ORDER BY COUNT(e) DESC")
+  List<Object[]> osBreakdown(@Param("urlId") Long urlId);
+
+  @Query("SELECT CAST(e.clickedAt AS date) as day, e.deviceType, COUNT(e) FROM ClickEvent e " +
+      "WHERE e.shortUrl.id = :urlId AND e.clickedAt >= :since AND e.deviceType IS NOT NULL " +
+      "GROUP BY CAST(e.clickedAt AS date), e.deviceType ORDER BY day, e.deviceType")
+  List<Object[]> dailyDeviceBreakdown(@Param("urlId") Long urlId, @Param("since") LocalDateTime since);
 }

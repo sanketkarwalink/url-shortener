@@ -178,11 +178,23 @@ public class UrlService {
       return new DailyCount(day, (Long) r[1]);
     }).collect(Collectors.toList());
 
+    List<Object[]> dailyDeviceRows = clickRepo.dailyDeviceBreakdown(id, since);
+    List<DailyDeviceCount> dailyDevice = dailyDeviceRows.stream().map(r -> {
+      LocalDate day;
+      if (r[0] instanceof java.sql.Date d) {
+        day = d.toLocalDate();
+      } else {
+        day = (LocalDate) r[0];
+      }
+      return new DailyDeviceCount(day, (String) r[1], (Long) r[2]);
+    }).collect(Collectors.toList());
+
     List<CountItem> devices = toCountItems(clickRepo.deviceBreakdown(id));
     List<CountItem> browsers = toCountItems(clickRepo.browserBreakdown(id));
+    List<CountItem> os = toCountItems(clickRepo.osBreakdown(id));
     List<CountItem> referrers = toCountItems(clickRepo.refererBreakdown(id));
 
-    return new AnalyticsResponse(url.getShortCode(), url.getOriginalUrl(), totalClicks, daily, devices, browsers, referrers);
+    return new AnalyticsResponse(url.getShortCode(), url.getOriginalUrl(), totalClicks, daily, dailyDevice, devices, browsers, os, referrers);
   }
 
   @CacheEvict(value = "shortUrl", key = "#shortCode")
@@ -249,10 +261,10 @@ public class UrlService {
 
   private void parseUserAgent(String ua, ClickEvent event) {
     String lower = ua.toLowerCase();
-    if (lower.contains("mobile") || lower.contains("iphone") || lower.contains("android")) {
-      event.setDeviceType("Mobile");
-    } else if (lower.contains("tablet") || lower.contains("ipad")) {
+    if (lower.contains("tablet") || lower.contains("ipad")) {
       event.setDeviceType("Tablet");
+    } else if (lower.contains("mobile") || lower.contains("iphone") || lower.contains("android")) {
+      event.setDeviceType("Mobile");
     } else {
       event.setDeviceType("Desktop");
     }
@@ -269,9 +281,9 @@ public class UrlService {
     }
     if (lower.contains("windows")) {
       event.setOs("Windows");
-    } else if (lower.contains("mac")) {
+    } else if (lower.contains("mac") && !lower.contains("android")) {
       event.setOs("macOS");
-    } else if (lower.contains("linux")) {
+    } else if (lower.contains("linux") && !lower.contains("android")) {
       event.setOs("Linux");
     } else if (lower.contains("android")) {
       event.setOs("Android");

@@ -35,8 +35,10 @@ type Analytics = {
   originalUrl: string;
   totalClicks: number;
   dailyClicks: { date: string; count: number }[];
+  dailyDeviceBreakdown: { date: string; deviceType: string; count: number }[];
   devices: { label: string; count: number }[];
   browsers: { label: string; count: number }[];
+  os: { label: string; count: number }[];
   referrers: { label: string; count: number }[];
 };
 
@@ -650,7 +652,49 @@ export default function Home() {
                 </div>
               ) : (
                 <div className="px-6 md:px-8 py-6 space-y-8">
-                  {analytics.dailyClicks.length > 0 && (
+                  {analytics.dailyDeviceBreakdown.length > 0 ? (
+                    <div>
+                      <p className="text-sm font-semibold mb-4">Last 30 Days — by Device</p>
+                      <div className="h-48 md:h-56">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={(() => {
+                              const deviceTypes = [...new Set(analytics.dailyDeviceBreakdown.map(d => d.deviceType))];
+                              const dateMap: Record<string, Record<string, number>> = {};
+                              for (const d of analytics.dailyDeviceBreakdown) {
+                                if (!dateMap[d.date]) dateMap[d.date] = {};
+                                dateMap[d.date][d.deviceType] = d.count;
+                              }
+                              const allDates = [...new Set(analytics.dailyDeviceBreakdown.map(d => d.date))].sort();
+                              return allDates.map(date => {
+                                const row: Record<string, string | number> = { date };
+                                for (const dt of deviceTypes) {
+                                  row[dt] = dateMap[date]?.[dt] ?? 0;
+                                }
+                                return row;
+                              });
+                            })()}
+                            barCategoryGap="20%"
+                          >
+                            <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted)" }} tickFormatter={(v) => v.slice(5)} axisLine={false} tickLine={false} />
+                            <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "var(--muted)" }} axisLine={false} tickLine={false} />
+                            <Tooltip
+                              contentStyle={{
+                                background: "var(--surface)",
+                                border: "1px solid var(--border)",
+                                borderRadius: "12px",
+                                fontSize: "13px",
+                              }}
+                            />
+                            <Legend wrapperStyle={{ fontSize: "11px" }} />
+                            {[...new Set(analytics.dailyDeviceBreakdown.map(d => d.deviceType))].map((dt, i) => (
+                              <Bar key={dt} dataKey={dt} stackId="device" fill={PIE_COLORS[i % PIE_COLORS.length]} radius={[i === 0 ? 6 : 0, i === 0 ? 6 : 0, 0, 0]} />
+                            ))}
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  ) : analytics.dailyClicks.length > 0 ? (
                     <div>
                       <p className="text-sm font-semibold mb-4">Last 30 Days</p>
                       <div className="h-48 md:h-56">
@@ -671,9 +715,9 @@ export default function Home() {
                         </ResponsiveContainer>
                       </div>
                     </div>
-                  )}
+                  ) : null}
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {analytics.devices.length > 0 && (
                       <div className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
                         <p className="text-sm font-semibold mb-3">Devices</p>
@@ -701,6 +745,25 @@ export default function Home() {
                             <PieChart>
                               <Pie data={analytics.browsers} dataKey="count" nameKey="label" cx="50%" cy="50%" outerRadius={60}>
                                 {analytics.browsers.map((_, i) => (
+                                  <Cell key={i} fill={PIE_COLORS[(i + 1) % PIE_COLORS.length]} />
+                                ))}
+                              </Pie>
+                              <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "12px", fontSize: "13px" }} />
+                              <Legend wrapperStyle={{ fontSize: "11px" }} />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    )}
+
+                    {analytics.os.length > 0 && (
+                      <div className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
+                        <p className="text-sm font-semibold mb-3">Operating Systems</p>
+                        <div className="h-44">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie data={analytics.os} dataKey="count" nameKey="label" cx="50%" cy="50%" outerRadius={60}>
+                                {analytics.os.map((_, i) => (
                                   <Cell key={i} fill={PIE_COLORS[(i + 2) % PIE_COLORS.length]} />
                                 ))}
                               </Pie>
